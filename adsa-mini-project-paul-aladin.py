@@ -24,6 +24,41 @@ class Tournament():
         for game in self.games:
             res += str(game) + '\n\n'
         return res
+     
+    def dico(self,score):
+        d = 0
+        f = len(self.players)-1
+        while (f>=d):
+            m = (f+d)//2
+            if self.players[m].score == score : return self.players[m].name
+            elif self.players[m].score > score : f=m-1
+            else:d = m+1
+        return False
+
+    def randomgames(self):
+        for i in range(3):
+            random.shuffle(self.players)
+            for dix in range(10):
+                game = Game(self.players[dix*10:dix*10+10])
+                game.Points()
+    def eliminativegames(self):
+        for i in range(1,10):
+            for dix in range(10-(i-1)):
+                game = Game(self.players[dix*10:dix*10+10])
+                game.Points()
+            fusion(self.players)
+            for player in self.players:
+                print(player.name,"score:",player.score)
+            for i in range(10):
+                self.players.pop()
+            for player in self.players:
+                print(player.name,"score:",player.score)
+    
+    def finals(self):
+        for player in self.players : player.score = 0
+        for i in range(5):
+            game = Game(self.players)
+            game.Points()
         
     def Start(self):
         shuffled_players = random.sample(self.players, k=len(self.players))
@@ -436,6 +471,41 @@ class Player():
         else:
             res += 'a crewmate'
         return res
+    
+def fusion(l):
+    n = len(l)
+
+    # prévoir la condition d'arrêt
+    if n > 1:
+        # séparer la liste en 2 sous listes
+        milieu = n // 2
+        liste_gauche = l[0:milieu]
+        liste_droite = l[milieu:n]
+        # trier les sous listes
+        fusion(liste_gauche)
+        fusion(liste_droite)
+
+        # recombiner les listes
+        indice_liste = indice_gauche = indice_droite = 0
+
+        while indice_gauche < len(liste_gauche) and indice_droite < len(liste_droite):
+            if liste_gauche[indice_gauche].score > liste_droite[indice_droite].score:
+                l[indice_liste] = liste_gauche[indice_gauche]
+                indice_gauche += 1
+            else:
+                l[indice_liste] = liste_droite[indice_droite]
+                indice_droite += 1
+            indice_liste +=1
+
+        while indice_gauche < len(liste_gauche):
+            l[indice_liste] = liste_gauche[indice_gauche]
+            indice_gauche +=1
+            indice_liste += 1
+
+        while indice_droite < len(liste_droite):
+            l[indice_liste] = liste_droite[indice_droite]
+            indice_droite += 1
+            indice_liste += 1
         
 def test_game():
     players = [Player('doubleA'), Player('polo'), Player('tomus'), 
@@ -514,7 +584,27 @@ def test_random_has_seen():
     
     game.probable_impostors(dead_cm, game.mat_has_seen())
     
+def test_tournament2():
+    players = []
+    for i in range(100):
+        player_name = 'player' + str(i+1)
+        players.append(Player(player_name))
+    tournament = Tournament(players)
+    #3random games
+    tournament.randomgames()
+    #organise players
+    fusion(players)
+    #eliminative games
+    tournament.eliminativegames()
+    #finals
+    tournament.finals()
+    #winners
+    fusion(players)
+    print("Here are the winners!!!")
+    for i in range(3):
+        print(players[i].name,"with a score of:",players[i].score)
+    
 
-test_points()
+test_tournament2()
 
 #ajouter fonc qui définit scores random des joueurs

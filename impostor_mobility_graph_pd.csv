@@ -1,0 +1,15 @@
+rooms;cafetaria;weapons;O2;navigation;shield;mid_room;right_room;storage;electrical;lower_e;security;reactor;upper_e;medbay
+cafeteria;0.00;7.50;inf;inf;8.00;5.00;inf;10.50;inf;inf;inf;inf;12.00;9.00
+weapons;7.50;0.00;6.00;3.00;13.00;inf;inf;inf;inf;inf;inf;inf;inf;inf
+O2;inf;6.00;0.00;8.00;11.00;9.00;inf;inf;inf;inf;inf;inf;inf;inf
+navigation;inf;3.00;8.00;0.00;2.50;8.00;inf;inf;inf;inf;inf;inf;inf;inf
+shield;8.00;13.00;11.00;2.50;0.00;6.50;5.00;8.00;inf;inf;inf;inf;inf;inf
+mid_room;5.00;inf;9.00;8.00;6.50;0.00;inf;8.00;inf;inf;inf;inf;inf;inf
+right_room;inf;inf;inf;inf;5.00;inf;0.00;7.00;inf;inf;inf;inf;inf;inf
+storage;10.50;inf;inf;inf;8.00;8.00;7.00;0.00;9.00;13.00;inf;inf;inf;inf
+electrical;inf;inf;inf;inf;inf;inf;inf;9.00;0.00;11.00;2.50;inf;inf;3.00
+lower_e;inf;inf;inf;inf;inf;inf;inf;13.00;11.00;0.00;7.00;3.00;9.00;inf
+security;inf;inf;inf;inf;inf;inf;inf;inf;2.50;7.00;0.00;6.00;7.00;3.00
+reactor;inf;inf;inf;inf;inf;inf;inf;inf;inf;3.00;6.00;0.00;3.50;inf
+upper_e;12.00;inf;inf;inf;inf;inf;inf;inf;inf;9.00;7.00;3.50;0.00;9.00
+med_bay;9.00;inf;inf;inf;inf;inf;inf;inf;3.00;inf;3.00;inf;9.00;0.00

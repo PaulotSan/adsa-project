@@ -1,132 +1,151 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Nov 15 16:41:38 2020
+
+@author: Paul Jouet, Aladin Homsy
+"""
+from typing import List, Tuple
+from pandas.io.parsers import read_csv
+from pandas import DataFrame
 import math
-inf=math.inf
+import csv
 
-class Room():
-    def __init__(self,name,connexions,vent_connexions):
-        self.name=name
-        self.connexions=connexions
-        self.vent_connexions=vent_connexions
-    def connexion(self,room2,distance):
-        self.connexions.append((room2,distance))
-        room2.connexions.append((self,distance))
-    def vent_connexion(self,room2):
-        self.vent_connexions.append(room2)
-        room2.vent_connexions.append(self)
-        
-cafetaria=Room('cafetaria',[],[])
-weapons=Room('weapons',[],[])
-O2=Room('O2',[],[])
-shield=Room('shield',[],[])
-navigation=Room('navigation',[],[])
-right_room=Room('right_room',[],[])
-mid_room=Room('mid_room',[],[])
-storage=Room('storage',[],[])
-medbay=Room('medbay',[],[])
-electrical=Room('electrical',[],[])
-secutity=Room('security',[],[])
-reactor=Room('reactor',[],[])
-upper_e=Room('upper_e',[],[])
-lower_e=Room('lower_r',[],[])
-coridor_vent=Room('coridor_vent',[],[])
+rooms = ["cafetaria","weapons","O2","navigation","shield","mid_room",
+          "right_room","storage","electrical","lower_e","security","reactor","upper_e","medbay"]
 
-cafetaria.connexion(weapons,2)
-cafetaria.connexion(mid_room,3)
-cafetaria.connexion(medbay,2)
-cafetaria.connexion(storage,3)
-cafetaria.connexion(upper_e,8)
-weapons.connexion(navigation,6)
-weapons.connexion(O2,2)
-weapons.connexion(shield,8)
-weapons.connexion(coridor_vent,5)
-navigation.connexion(O2,5)
-navigation.connexion(shield,7)
-navigation.connexion(coridor_vent,4)
-shield.connexion(right_room,3)
-shield.connexion(storage,5)
-shield.connexion(coridor_vent,3)
-shield.connexion(O2,6)
-O2.connexion(coridor_vent,4)
-right_room.connexion(storage,4)
-storage.connexion(mid_room,3)
-storage.connexion(electrical,3)
-storage.connexion(lower_e,8)
-electrical.connexion(lower_e,4)
-lower_e.connexion(reactor,4)
-lower_e.connexion(secutity,4)
-lower_e.connexion(upper_e,6)
-secutity.connexion(reactor,3)
-secutity.connexion(upper_e,3)
-upper_e.connexion(reactor,3)
-upper_e.connexion(medbay,5)
+def Floyd_warshall(mat: List[List[float]]):
+    """
+    This method modifies the adjacency matrix, replacing the edges with the shortest path for every 
+    pair of vertices.
 
-cafetaria.vent_connexion(coridor_vent)
-mid_room.vent_connexion(cafetaria)
-coridor_vent.vent_connexion(mid_room)
-weapons.vent_connexion(navigation)
-navigation.vent_connexion(shield)
-secutity.vent_connexion(medbay)
-medbay.vent_connexion(electrical)
-electrical.vent_connexion(secutity)
-lower_e.vent_connexion(reactor)
-reactor.vent_connexion(upper_e)
+    Parameters
+    ----------
+    mat : List[List[float]]
+        Adjacency matrix.
 
-vertexes=[cafetaria,weapons,O2,shield,navigation,right_room,mid_room,storage,medbay,electrical,secutity,reactor,upper_e,lower_e,coridor_vent]
+    Returns
+    -------
+    None.
 
-unvisited=[cafetaria,weapons,O2,shield,navigation,right_room,mid_room,storage,medbay,electrical,secutity,reactor,upper_e,lower_e,coridor_vent]
-visited=[]
-
-shortest=[]
-previous=[]
-for i in range(15):
-    shortest.append(inf)
-    previous.append(None)
-
-tableau=[vertexes,shortest,previous]
-
-
-
-def dijkstra(start,bol):
-    if bol==True:
-        shortest[vertexes.index(start)]=0
-        
-        
-    short=1000
-    index=0
-    for a in shortest:#on cherche le plus petit dans shortest et qui appartient a unvisited
-        if a < short and vertexes[index] in unvisited :
-            a=short
-            vis=index#index de celui a ajouté dans visited
-        index+=1
-    visited.append(vertexes[vis])#on l ajoute ds visited
-    unvisited.remove(vertexes[vis])
+    """
+    for k in range(14):
+        for i in range(14):
+            for j in range(14):
+                if mat[i][j] > mat[i][k] + mat[k][j]: 
+                    mat[i][j] = mat[i][k] + mat[k][j]
     
-    for b in vertexes[vis].connexions:
-        if b[0] in unvisited:
-            somme=shortest[vis]+b[1]
-            if somme<shortest[vertexes.index(b[0])]:
-                shortest[vertexes.index(b[0])]=somme
-                previous[vertexes.index(b[0])]=vertexes[vis]
+def import_graph(graph_cm:str = "crewmate_mobility_graph.csv", graph_im:str = "impostor_mobility_graph.csv") -> Tuple[List[List[float]], List[List[float]]]:
+    """
+    This method imports the graphs from the csv files to a matrix
+
+    Parameters
+    ----------
+    graph_cm : str, optional
+        Path to the csv file containing the adjacency matrix of the mobility graph for crewmates
+        The default is "crewmate_mobility_graph.csv".
+    graph_im : str, optional
+        Path to the csv file containing the adjacency matrix of the mobility graph for impostors
+        The default is "impostor_mobility_graph.csv".
+
+    Returns
+    -------
+    Tuple[List[List[float]], List[List[float]]]
+        Returns the matrixes as a list of lists of float values.
+
+    """
+    mat_cm = []
+    mat_im = []
     
-    if len(unvisited)>1:
-        print('\nvertexes:\n')
-        for i in range(15):
-            print (vertexes[i].name)
-        print('\nshortest:\n\n',shortest)
+    with open(graph_cm, newline='') as cm_csv:
+        reader = csv.reader(cm_csv, delimiter=';')
+        for row in reader:
+            mat_cm.append(row)
+            for element in range(len(row)):
+                if row[element] == 'inf':
+                    row[element] = math.inf
+                else:
+                    row[element] = float(row[element])
+                
+    with open(graph_im, newline='') as im_csv:
+        reader = csv.reader(im_csv, delimiter=';')
+        for row in reader:
+            mat_im.append(row)
+            for element in range(len(row)):
+                row[element] = float(row[element])
+                
+                
+    return (mat_cm, mat_im)
+
+
+def print_all_paths_fw():
+    
+    
+    mat_cm, mat_im = import_graph()
+    Floyd_warshall(mat_cm) 
+    Floyd_warshall(mat_im)
+    
+    for i in range(14):
+        for j in range(14):
+            print(rooms[i],rooms[j],'\nfor crewmates :', 
+                  mat_cm[i][j],'seconds\nfor impostors :', mat_im[i][j],'seconds\n')
+
+def query_path():
+    """
+    Asks the user for 2 rooms and displays the shortest time between those rooms
+    """
+    mat_cm, mat_im = import_graph()
+    Floyd_warshall(mat_cm) 
+    Floyd_warshall(mat_im)
+    
+    print("Type index of first room, then second")
+    for i in range(14):
+        print(i, ":", rooms[i])
+    a = int(input("From : "))
+    b = int(input("To : "))
+    
+    print("For a crewmate it takes", mat_cm[a][b], "seconds")
+    print("For an impostor it takes", mat_im[a][b], "seconds")
+    
+#print_all_paths_fw()
+#query_path()
+
+
+def display_fw_pd():
+    """
+    This method displays all paths using a pandas DataFrame
+
+    Returns
+    -------
+    None.
+
+    """
+    mat_cm = read_csv("crewmate_mobility_graph_pd.csv", delimiter=';', index_col = 0)
+    mat_im = read_csv("impostor_mobility_graph_pd.csv", delimiter=';', index_col = 0)
+    floyd_warshall_pd(mat_cm)
+    floyd_warshall_pd(mat_im)
+    print(mat_cm, '\n', mat_im)
+    
+def floyd_warshall_pd(mat: DataFrame):
+    """
+    This method modifies the adjacency matrix, replacing the edges with the shortest path for every 
+    pair of vertices, using pandas dataframes.
+
+    Parameters
+    ----------
+    mat : DataFrame
+        Adjacency matrix.
+
+    Returns
+    -------
+    None.
+
+    """
+    for k in range(14):
+        for i in range(14):
+            for j in range(14):
+                if mat.iloc[i,j] > mat.iloc[i,k] + mat.iloc[k,j]: 
+                    mat.iloc[i,j] = mat.iloc[i,k] + mat.iloc[k,j]
         
-        print('\nprevious:\n')
-        for i in range(15):
-            if previous[i]==None:
-                print(previous[i])
-            else:print(previous[i].name)
-        print('\nshortest:\n')
-        for i in range(len(visited)):
-            print(visited[i].name)
-    
-        dijkstra(start,False)
-                
-                
-dijkstra(cafetaria,True )                
-                
-                
-                
-                
+print_all_paths_fw()
+
+
