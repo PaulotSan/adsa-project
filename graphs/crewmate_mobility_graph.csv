@@ -1,0 +1,14 @@
+0.00;7.50;inf;inf;inf;9.50;inf;10.50;inf;inf;inf;inf;12.00;9.00
+7.50;0.00;6.00;9.00;13.00;inf;inf;inf;inf;inf;inf;inf;inf;inf
+inf;6.00;0.00;8.00;11.00;inf;inf;inf;inf;inf;inf;inf;inf;inf
+inf;9.00;8.00;0.00;11.00;inf;inf;inf;inf;inf;inf;inf;inf;inf
+inf;13.00;11.00;11.00;0.00;inf;5.00;8.00;inf;inf;inf;inf;inf;inf
+9.50;inf;inf;inf;inf;0.00;inf;8.00;inf;inf;inf;inf;inf;inf
+inf;inf;inf;inf;5.00;inf;0.00;7.00;inf;inf;inf;inf;inf;inf
+10.50;inf;inf;inf;8.00;8.00;7.00;0.00;9.00;13.00;inf;inf;inf;inf
+inf;inf;inf;inf;inf;inf;inf;9.00;0.00;11.00;inf;inf;inf;inf
+inf;inf;inf;inf;inf;inf;inf;13.00;11.00;0.00;7.00;8.00;9.00;inf
+inf;inf;inf;inf;inf;inf;inf;inf;inf;7.00;0.00;6.00;7.00;inf
+inf;inf;inf;inf;inf;inf;inf;inf;inf;8.00;6.00;0.00;8.00;inf
+12.00;inf;inf;inf;inf;inf;inf;inf;inf;9.00;7.00;8.00;0.00;9.00
+9.00;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;9.00;0.00

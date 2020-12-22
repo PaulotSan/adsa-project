@@ -1,0 +1,7 @@
+The external packages used in our project are standard in python for most, except numpy.
+
+numpy
+math
+csv
+random
+typing

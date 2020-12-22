@@ -2,11 +2,15 @@
 """
 Created on Sun Nov 15 16:41:38 2020
 
-@author: Paul Jouet, Aladin Homsy
+@authors: Paul Jouet, Aladin Homsy
 """
 from typing import List, Set, Tuple, Dict
 import random
 import numpy as np
+from pandas.io.parsers import read_csv #CAN BE REMOVED IF NOT USING THE PANDAS FUNCS
+from pandas import DataFrame # CAN BE REMOVED IF NOT USING THE PANDAS FUNCS
+import math
+import csv
 
 class Tournament():
     """
@@ -25,14 +29,32 @@ class Tournament():
             res += str(game) + '\n\n'
         return res
      
-    def dico(self,score):
+
+    def dico(self, score) -> str:
+        """
+        Apply a dichotomic search for a score in the database, complexity is O(log(n))
+
+        Parameters
+        ----------
+        score : int
+            The score of the player we wish to find.
+
+        Returns
+        -------
+        str 
+            The name of the first player found, False if none.
+
+        """
         d = 0
-        f = len(self.players)-1
-        while (f>=d):
+        f = len(self.players)-1 # This is O(1) complexity, because the len value is stored in the data structure in Python !
+        while (f >= d):
             m = (f+d)//2
-            if self.players[m].score == score : return self.players[m].name
-            elif self.players[m].score > score : f=m-1
-            else:d = m+1
+            if self.players[m].score == score : # accessing any index from a list is O(1) complexity
+                return self.players[m].name 
+            elif self.players[m].score < score : 
+                f = m-1
+            else:
+                d = m+1
         return False
 
     def randomgames(self):
@@ -41,18 +63,16 @@ class Tournament():
             for dix in range(10):
                 game = Game(self.players[dix*10:dix*10+10])
                 game.Points()
-    def eliminativegames(self):
+                
+    def eliminatorygames(self):
+        
         for i in range(1,10):
             for dix in range(10-(i-1)):
                 game = Game(self.players[dix*10:dix*10+10])
                 game.Points()
             fusion(self.players)
-            for player in self.players:
-                print(player.name,"score:",player.score)
             for i in range(10):
                 self.players.pop()
-            for player in self.players:
-                print(player.name,"score:",player.score)
     
     def finals(self):
         for player in self.players : player.score = 0
@@ -165,7 +185,7 @@ class Game():
         victory = random.randint(1,2)
         
         if victory == 1: #impostors win
-            print("\nImpostors Win\n")
+            """print("\nImpostors Win\n")"""
             
             #then all crewmates are dead
             for crewmate in self.crewmates:
@@ -237,13 +257,13 @@ class Game():
                 self.Tasks_Vote_point(vote, 3)
                 
         else: #crewmates win
-            print("\nCrewmates Win")
+            """print("\nCrewmates Win")"""
             for crewmate in self.crewmates:
                 crewmate.score += 5
             win_crewmates = random.randint(0,10)
             
             if win_crewmates <= 7:
-                print("by killing all Impostors\n")
+                """print("by killing all Impostors\n")"""
                 
                 #2 impostors are dead
                 self.impostors[0].alive = False
@@ -272,7 +292,7 @@ class Game():
                 self.Tasks_Vote_point(tasks, 1)
                 
             else:
-                print("by doing all tasks\n")
+                """print("by doing all tasks\n")"""
                 #all tasks done
                 self.Tasks_Vote_point(8, 1)
                 
@@ -446,7 +466,7 @@ class Game():
         for s in first_suspects:
             print (s.name)
             
-        print("The most probable impostors are therefore :")
+        print("The most probable impostors are therefore (with thier proba):")
         
         for p in impostor_probabilities.keys():
             print (p.name, impostor_probabilities[p])
@@ -544,7 +564,7 @@ def test_tournament():
     print(tournament)
     
 
-#test function for computing the probability for each player of being an impostor in the example given
+# test function for computing the probability for each player of being an impostor in the example given
 def test_has_seen():
     """
     Method for testing the has-seen algorithm
@@ -595,7 +615,7 @@ def test_tournament2():
     #organise players
     fusion(players)
     #eliminative games
-    tournament.eliminativegames()
+    tournament.eliminatorygames()
     #finals
     tournament.finals()
     #winners
@@ -605,6 +625,327 @@ def test_tournament2():
         print(players[i].name,"with a score of:",players[i].score)
     
 
-test_tournament2()
 
-#ajouter fonc qui définit scores random des joueurs
+
+rooms = ["cafetaria","weapons","O2","navigation","shield","mid_room",
+          "right_room","storage","electrical","lower_e","security","reactor","upper_e","medbay"]
+
+def Floyd_warshall(mat: List[List[float]]):
+    """
+    This method modifies the adjacency matrix, replacing the edges with the shortest path for every 
+    pair of vertices.
+
+    Parameters
+    ----------
+    mat : List[List[float]]
+        Adjacency matrix.
+
+    Returns
+    -------
+    None.
+
+    """
+    for k in range(14):
+        for i in range(14):
+            for j in range(14):
+                if mat[i][j] > mat[i][k] + mat[k][j]: 
+                    mat[i][j] = mat[i][k] + mat[k][j]
+    
+def import_graph(graph_cm:str = "graphs/crewmate_mobility_graph.csv", graph_im:str = "graphs/impostor_mobility_graph.csv") -> Tuple[List[List[float]], List[List[float]]]:
+    """
+    This method imports the graphs from the csv files to a matrix
+
+    Parameters
+    ----------
+    graph_cm : str, optional
+        Path to the csv file containing the adjacency matrix of the mobility graph for crewmates
+        The default is "graphs/crewmate_mobility_graph.csv".
+    graph_im : str, optional
+        Path to the csv file containing the adjacency matrix of the mobility graph for impostors
+        The default is "graphs/impostor_mobility_graph.csv".
+
+    Returns
+    -------
+    Tuple[List[List[float]], List[List[float]]]
+        Returns the matrixes as a list of lists of float values.
+
+    """
+    mat_cm = []
+    mat_im = []
+    
+    with open(graph_cm, newline='') as cm_csv:
+        reader = csv.reader(cm_csv, delimiter=';')
+        for row in reader:
+            mat_cm.append(row)
+            for element in range(len(row)):
+                if row[element] == 'inf':
+                    row[element] = math.inf
+                else:
+                    row[element] = float(row[element])
+                
+    with open(graph_im, newline='') as im_csv:
+        reader = csv.reader(im_csv, delimiter=';')
+        for row in reader:
+            mat_im.append(row)
+            for element in range(len(row)):
+                row[element] = float(row[element])
+                
+                
+    return (mat_cm, mat_im)
+
+
+def print_all_paths_fw():
+    
+    
+    mat_cm, mat_im = import_graph()
+    Floyd_warshall(mat_cm) 
+    Floyd_warshall(mat_im)
+    
+    for i in range(14):
+        for j in range(14):
+            print(rooms[i],rooms[j],'\nfor crewmates :', 
+                  mat_cm[i][j],'seconds\nfor impostors :', mat_im[i][j],'seconds\n')
+
+def query_path():
+    """
+    Asks the user for 2 rooms and displays the shortest time between those rooms
+    """
+    mat_cm, mat_im = import_graph()
+    Floyd_warshall(mat_cm) 
+    Floyd_warshall(mat_im)
+    
+    print("Type index of first room, then second")
+    for i in range(14):
+        print(i, ":", rooms[i])
+    a = int(input("From : "))
+    b = int(input("To : "))
+    
+    print("For a crewmate it takes", mat_cm[a][b], "seconds")
+    print("For an impostor it takes", mat_im[a][b], "seconds")
+    
+
+### STEP 4 ###
+
+def hamilton_path() -> List[List[int]]:
+    """
+    This method returns the list of all Hamilton paths, using a recursive depth first search with backtracking
+
+    Returns
+    -------
+    hamilton_paths : List[List[int]]
+        The list of all hamilton paths
+
+    """
+    adj_mat = import_graph()[0] # we use the crewmate mobility matrix
+    stack = [] # the list (used as a stack) which will contain the path
+    hamilton_paths = []
+    
+    def recursion_hamilton(start: int):
+        """
+        The recursive part of the method, for each node we explore all adjacent nodes which have not yet been
+        explored, adding them to a stack, when the stack is full (it has n elements, the number of nodes), we 
+        add the path to hamilton_paths.
+
+        Parameters
+        ----------
+        start : int
+            the current node.
+
+        Returns
+        -------
+        None.
+
+        """
+        if len(stack) == len(adj_mat):
+            hamilton_paths.append(stack[:])
+            stack.pop()
+            
+        else:
+            for j in range(len(adj_mat[start])):
+                if adj_mat[start][j] > 0 and adj_mat[start][j] < math.inf and j not in stack:
+                    stack.append(j)
+                    recursion_hamilton(j)
+            stack.pop()
+            
+    for i in range(len(adj_mat)):
+        stack.append(i)
+        recursion_hamilton(i)
+    return hamilton_paths
+ 
+      
+def shortest_hamilton(paths: List[List[int]], adj_mat: List[List[float]]) -> Tuple[List[int], float, int]:
+    """
+    This method uses the list of all hamiltonian paths, with the adjacence matrix used to compute them, and 
+    returns the first shortest path, its length, and the number of paths having the same length (other shortest)
+
+    Parameters
+    ----------
+    paths : List[List[int]]
+        Rooms are denoted by their corresponding integer.
+    adj_mat : List[List[float]]
+        Adjacence matrix of the mobility graph.
+
+    Returns
+    -------
+    Tuple[List[int], float, int]
+        Tuple containing a shortest hamiltonian path, its length and the number of paths of equal length
+
+    """
+    shortest_time = math.inf
+    shortest_path = None
+    cpt=1
+    
+    def path_length(path: List[int]) -> float:
+        """
+        Sub-function which returns the length of a path
+
+        Parameters
+        ----------
+        path : List[int]
+            the path described as a list of integers (representing the rooms).
+
+        Returns
+        -------
+        float
+            length in seconds/centimeters.
+
+        """
+        length = 0
+        for i in range(len(path)-1):
+            length += adj_mat[path[i]][path[i+1]]
+        return length
+    
+    for path in paths:
+        path_len = path_length(path)
+        if path_len < shortest_time:
+            shortest_time = path_len
+            shortest_path = path
+            cpt=1
+        if path_len == shortest_time:
+            cpt+=1
+            
+    return shortest_path, shortest_time, cpt
+
+### END STEP 4 ###
+
+def Main():
+    """
+    Main method for demonstrating the features of our program.
+
+    Returns
+    -------
+    None.
+
+    """
+    again = True
+    while (again):
+    
+        # Menu
+        print("\nWhich feature should we try ?")
+        print(" 1 : Tournament")
+        print(" 2 : Set of probable impostors")
+        print(" 3 : Time to travel between any pair of room")
+        print(" 4 : How to secure last tasks")  
+        
+        """
+        #notes
+        #dans 1 mettre l option de voir tt ce qui s est passé
+        
+        """
+        choice = int(input())
+        
+        # Tournament
+        if choice == 1:
+            players = []
+            for i in range(100):
+                player_name = 'player' + str(i+1)
+                players.append(Player(player_name))
+            tournament = Tournament(players)
+            tournament.randomgames()
+            fusion(players)
+            
+            print("\nThe Among Us tournament has officially started !!!")
+            
+            print("\nThe 3 random games has already been done do you wanna see the ranking so far ?")
+            print("\n1 for yes, 2 for no")
+            if int(input()) == 1:
+                for player in players : print(player.name,"score:",player.score)
+                
+                print("\nDo you find a player from his score ?")
+                print("\n1 for yes, 2 for no")
+                if int(input()) == 1:
+                    print("\nEnter the score of the player you want to check")
+                    x = int(input())
+                    playername = tournament.dico(x)
+                    if playername == False : playername = " not in this list because no one has this score"
+                    print("\nA player with a score of",x,"is",playername)
+            
+            tournament.eliminatorygames()
+            print("\nThe eliminatory games have been played, do you want to see the 10 remaining players?")
+            print("\n1 for yes, 2 for no")
+            if int(input()) == 1:
+                for player in players : print(player.name)
+            tournament.finals()
+            
+            # winners
+            fusion(players)
+            print("\n\nHere are the winners!!!\n")
+            for i in range(3):
+                print("n°",i+1,players[i].name)
+            
+            print("\nDo you want to try another part of the project ?")
+            print("\n1 : Yes , 2 : No")
+            if int(input()) == 2 : again = False
+            
+        
+        # Set of probable impostors
+        if choice == 2:
+            BestTeachers = [Player('M.Peretti'), Player('Mme.Thai'), Player('M.Chendeb'), 
+                   Player('M.Gossard'), Player('M.Clain'), Player('M.Bertin'), 
+                   Player('M.Sart'), Player('M.Ghassany'), Player('M.He'), Player('M.Courbin')]
+            game = Game(BestTeachers)
+            random_dead_idx = random.randint(0,7) # we choose a random crewmate to die
+            dead_cm = game.crewmates[random_dead_idx]
+            game.probable_impostors(dead_cm, game.mat_has_seen())
+            
+            print("\nDo you want to try another part of the project ?")
+            print("\n1 : Yes , 2 : No")
+            if int(input()) == 2 : again = False
+        
+        # Time to travel any pair of rooms
+        if choice == 3:
+            print_all_paths_fw()
+            
+            print("\nDo you want to try another part of the project ?")
+            print("\n1 : Yes , 2 : No")
+            if int(input()) == 2 : again = False
+        
+        #last tasks
+        if choice == 4:
+            
+            paths = hamilton_path()
+            print("There are " + str(len(paths)) + " Hamiltonian paths in the crewmates' mobility graph..." +
+                  "\nWe will not print them all but let's try to find the shortest !\n")
+            
+            """
+            for path in paths:
+                print(path)
+                for room in path:
+                    print(rooms[room])
+            """
+            
+            short_path = shortest_hamilton(paths, import_graph()[0])
+            
+            print("We have computed the shortest path, in room number it looks like :\n" + str(short_path[0]) +
+                  ",\nthe corresponding room names however are :")
+            
+            for room in short_path[0]:
+                print(rooms[room])
+                
+            print("\nIts length is " + str(short_path[1]) + ", but there are actually " + str(short_path[2]) + " paths that short !")
+            
+            print("\nDo you want to try another part of the project ?")
+            print("\n1 : Yes , 2 : No")
+            if int(input()) == 2 : again = False  
+    
+Main() 
