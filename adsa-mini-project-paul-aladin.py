@@ -7,10 +7,12 @@ Created on Sun Nov 15 16:41:38 2020
 from typing import List, Set, Tuple, Dict
 import random
 import numpy as np
-from pandas.io.parsers import read_csv #CAN BE REMOVED IF NOT USING THE PANDAS FUNCS
-from pandas import DataFrame # CAN BE REMOVED IF NOT USING THE PANDAS FUNCS
 import math
 import csv
+
+# this list represents the rooms of the mobility graph, helps printing in a more readable way (not indexes)
+rooms = ["cafetaria","weapons","O2","navigation","shield","mid_room",
+          "right_room","storage","electrical","lower_e","security","reactor","upper_e","medbay"]
 
 class Tournament():
     """
@@ -58,33 +60,48 @@ class Tournament():
         return False
 
     def randomgames(self):
-        for i in range(3):
-            random.shuffle(self.players)
-            for dix in range(10):
-                game = Game(self.players[dix*10:dix*10+10])
-                game.Points()
+        """
+        Launches a round of random games (10 games with random players, this has to be done 3 times)
+
+        Returns
+        -------
+        None.
+
+        """
+        random.shuffle(self.players)
+        for ten in range(10):
+            game = Game(self.players[ten*10:ten*10+10])
+            game.Points()
+            self.games.append(game)
+        fusion(self.players) #O(nlog(n)) sort (so we can still access any player with O(log(n)) complexity) 
                 
     def eliminatorygames(self):
-        
+        """
+        Launches a round of eliminatory games
+
+        Returns
+        -------
+        None.
+
+        """
         for i in range(1,10):
-            for dix in range(10-(i-1)):
-                game = Game(self.players[dix*10:dix*10+10])
+            for ten in range(10-(i-1)):
+                game = Game(self.players[ten*10:ten*10+10])
                 game.Points()
+                self.games.append(game)
             fusion(self.players)
             for i in range(10):
                 self.players.pop()
+        
     
     def finals(self):
-        for player in self.players : player.score = 0
+        for player in self.players : player.score = 0 # reset scores
         for i in range(5):
             game = Game(self.players)
             game.Points()
-        
-    def Start(self):
-        shuffled_players = random.sample(self.players, k=len(self.players))
-        for i in range(10):
-            game_players = shuffled_players[10*i:10*(i+1)]
-            self.games.append(Game(game_players))
+            self.games.append(game)
+        fusion(self.players)
+            
         
 class Game():
     """
@@ -113,7 +130,7 @@ class Game():
         self.game_number = Game.total_game_number
         
     def __str__(self) -> str:
-        res = 'Game ' + str(self.game_number) + '\n\nPlayers :\n\n'
+        res = '\nGame ' + str(self.game_number) + '\n\nPlayers :\n\n'
         for player in self.players:
             res += str(player) + '\n'
         res += 'Impostor 1 : ' + self.impostors[0].name
@@ -123,17 +140,6 @@ class Game():
     def Tasks_Vote_point(self,nb_done,multipl):
         """
         This method adds the points for votes and tasks to the crewmates
-
-        Parameters
-        ----------
-        nb_done : TYPE
-            DESCRIPTION.
-        multipl : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None.
 
         """
         liste = []
@@ -154,7 +160,6 @@ class Game():
         Parameters
         ----------
         nb_dead : int
-            DESCRIPTION.
 
         Returns
         -------
@@ -462,11 +467,11 @@ class Game():
             
         impostor_probabilities = {player: probs[player] for player in sorted(probs, key=probs.get, reverse=True)}
         
-        print("The dead crewmate is", dead_cm.name, "who has seen :")
+        print("\nThe first crewmate who died in our scenario is", dead_cm.name, "who had seen :\n")
         for s in first_suspects:
             print (s.name)
             
-        print("The most probable impostors are therefore (with thier proba):")
+        print("\nThe most probable impostors are therefore (with their probabilities) :\n")
         
         for p in impostor_probabilities.keys():
             print (p.name, impostor_probabilities[p])
@@ -490,22 +495,36 @@ class Player():
             res += 'an impostor'
         else:
             res += 'a crewmate'
+        res += ", current score : " + str(self.score)
         return res
     
-def fusion(l):
-    n = len(l)
+def fusion(l: List['Player']):
+    """
+    A divide and conquer algorithm for sorting our player list
 
-    # prévoir la condition d'arrêt
+    Parameters
+    ----------
+    l : List[Player]
+        The list of players.
+
+    Returns
+    -------
+    None.
+
+    """
+    n = len(l) # O(1)
+
+    # stop condition
     if n > 1:
-        # séparer la liste en 2 sous listes
+        # split into 2 sub lists
         milieu = n // 2
         liste_gauche = l[0:milieu]
         liste_droite = l[milieu:n]
-        # trier les sous listes
+        # sort sub lists
         fusion(liste_gauche)
         fusion(liste_droite)
 
-        # recombiner les listes
+        # merge lists
         indice_liste = indice_gauche = indice_droite = 0
 
         while indice_gauche < len(liste_gauche) and indice_droite < len(liste_droite):
@@ -527,108 +546,7 @@ def fusion(l):
             indice_droite += 1
             indice_liste += 1
         
-def test_game():
-    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
-               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
-               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
-    game1 = Game(players)
-    game2 = Game(players)
-    print(game1) #la partie est bien crée, et 2 imposteurs sont choisis aléatoirement
-    print(game2)
-    
-def test_points():
-    """
-    Method for testing the points attribution between players in a game
-
-    Returns
-    -------
-    None.
-
-    """
-    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
-               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
-               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
-    game = Game(players)
-    
-    game.Points()
-    for player in game.players:
-        print("Impostor :", player.impostor, player.name, player.score)
-    
-def test_tournament():
-    players = []
-    for i in range(100):
-        player_name = 'player' + str(i+1)
-        players.append(Player(player_name))
-    tournament = Tournament(players)
-    tournament.Start()
-    print(tournament)
-    
-
-# test function for computing the probability for each player of being an impostor in the example given
-def test_has_seen():
-    """
-    Method for testing the has-seen algorithm
-    """
-    
-    #the incidence matrix representing the has-seen-graph    
-    inc_mat=np.array([[1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
-                     [1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
-                     [0,0,0,1,0,1,1,0,0,0,0,0,0,0,0],
-                     [0,0,0,0,0,1,0,1,1,0,0,0,0,0,0],
-                     [0,1,0,0,0,0,0,1,0,1,0,0,0,0,0],
-                     [0,0,1,0,0,0,0,0,0,0,1,1,0,0,0],
-                     [0,0,0,1,0,0,0,0,0,0,0,0,1,1,0],
-                     [0,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
-                     [0,0,0,0,0,0,0,0,1,0,0,1,1,0,0],
-                     [0,0,0,0,0,0,0,0,0,1,0,0,0,1,1]])
-    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
-               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
-               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
-    game = Game(players)
-    game.probable_impostors(players[0], inc_mat)
-  
-
-def test_random_has_seen():
-    """
-    Test function for generating a random first kill and random connexions between the players, 
-    and then computing players' probability of being impostor
-    """
-    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
-               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
-               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
-    game = Game(players)
-    inc_mat = game.mat_has_seen()
-    print(inc_mat,"\n")
-    random_dead_idx = random.randint(0,7) # we choose a random crewmate to die
-    dead_cm = game.crewmates[random_dead_idx]
-    
-    game.probable_impostors(dead_cm, game.mat_has_seen())
-    
-def test_tournament2():
-    players = []
-    for i in range(100):
-        player_name = 'player' + str(i+1)
-        players.append(Player(player_name))
-    tournament = Tournament(players)
-    #3random games
-    tournament.randomgames()
-    #organise players
-    fusion(players)
-    #eliminative games
-    tournament.eliminatorygames()
-    #finals
-    tournament.finals()
-    #winners
-    fusion(players)
-    print("Here are the winners!!!")
-    for i in range(3):
-        print(players[i].name,"with a score of:",players[i].score)
-    
-
-
-
-rooms = ["cafetaria","weapons","O2","navigation","shield","mid_room",
-          "right_room","storage","electrical","lower_e","security","reactor","upper_e","medbay"]
+### STEP 3 ###
 
 def Floyd_warshall(mat: List[List[float]]):
     """
@@ -723,6 +641,7 @@ def query_path():
     print("For a crewmate it takes", mat_cm[a][b], "seconds")
     print("For an impostor it takes", mat_im[a][b], "seconds")
     
+### END STEP 3 ###
 
 ### STEP 4 ###
 
@@ -856,67 +775,105 @@ def Main():
         
         # Tournament
         if choice == 1:
+            print("\nThe Among Us tournament has officially started !!!")
             players = []
             for i in range(100):
                 player_name = 'player' + str(i+1)
                 players.append(Player(player_name))
             tournament = Tournament(players)
+            
             tournament.randomgames()
-            fusion(players)
+            print(tournament)
+            print("\nHere we simply created a tournament, and launched the first 10 random games to get a first leaderboard.")
+            print("We printed the details for all games. As there will be more and more games, we will not continue doing "+
+                  "so, but they are available in the 'games' attribute of the tournament. We did not optimize "+
+                  "this part of the tournament object as it was not required, but helps visualize what is happening")
             
-            print("\nThe Among Us tournament has officially started !!!")
+            print("\nLet us now play the 2 next random games to see our leaderboard before eliminatory games !")
             
-            print("\nThe 3 random games has already been done do you wanna see the ranking so far ?")
-            print("\n1 for yes, 2 for no")
+            tournament.randomgames()
+            tournament.randomgames()
+            
+            print("\nDone !\n\nWould you like to see the leaderboard now ?\n1 for yes, 2 for no")
             if int(input()) == 1:
-                for player in players : print(player.name,"score:",player.score)
+                for player in players : print(player.name,"has scored",player.score,"points")
                 
-                print("\nDo you find a player from his score ?")
+                print("\nWould you like trying to find a player using his score ?")
                 print("\n1 for yes, 2 for no")
                 if int(input()) == 1:
                     print("\nEnter the score of the player you want to check")
                     x = int(input())
                     playername = tournament.dico(x)
-                    if playername == False : playername = " not in this list because no one has this score"
+                    if playername == False : playername = "... not in this list because no one has this score"
                     print("\nA player with a score of",x,"is",playername)
             
             tournament.eliminatorygames()
-            print("\nThe eliminatory games have been played, do you want to see the 10 remaining players?")
+            print("\nNow the eliminatory games have been played, do you want to see the 10 remaining players?")
             print("\n1 for yes, 2 for no")
             if int(input()) == 1:
-                for player in players : print(player.name)
+                for player in players : 
+                    print(player.name,"score :", str(player.score))
+                
+            print("\n\nLet us now play the finals, we reset the scores and play 5 last games with our 10 remaining players !")
             tournament.finals()
             
-            # winners
-            fusion(players)
-            print("\n\nHere are the winners!!!\n")
-            for i in range(3):
-                print("n°",i+1,players[i].name)
+            print("\nGame details :\n\n")
+            for i in range(5):
+                print(tournament.games[-5+i])
             
-            print("\nDo you want to try another part of the project ?")
+            # winners
+            print("\n\nHere are the winners !\n")
+            for i in range(3):
+                print("n°",i+1,players[i].name,"with a score of",str(players[i].score))
+            
+            print("\nWould you like to try another part of the project ?")
             print("\n1 : Yes , 2 : No")
             if int(input()) == 2 : again = False
             
         
         # Set of probable impostors
         if choice == 2:
-            BestTeachers = [Player('M.Peretti'), Player('Mme.Thai'), Player('M.Chendeb'), 
+            print("Let's create a game between our most famous ESILV teachers ! (this list is non-exhaustive)")
+            bestTeachers = [Player('M.Peretti'), Player('Mme.Thai'), Player('M.Chendeb'), 
                    Player('M.Gossard'), Player('M.Clain'), Player('M.Bertin'), 
                    Player('M.Sart'), Player('M.Ghassany'), Player('M.He'), Player('M.Courbin')]
-            game = Game(BestTeachers)
+            print("The players are :\n")
+            for teacher in bestTeachers:
+                print(teacher.name)
+            game = Game(bestTeachers)
             random_dead_idx = random.randint(0,7) # we choose a random crewmate to die
-            dead_cm = game.crewmates[random_dead_idx]
-            game.probable_impostors(dead_cm, game.mat_has_seen())
             
-            print("\nDo you want to try another part of the project ?")
+            dead_cm = game.crewmates[random_dead_idx]
+            inc_mat = game.mat_has_seen()
+            
+            print("\nThe following incidence matrix represents the relation of seeing each other for players (rows in the order they were presented)\n")
+            print(inc_mat)
+            
+            game.probable_impostors(dead_cm, inc_mat)
+            
+            
+            print("\nWould you like to try another part of the project ?")
             print("\n1 : Yes , 2 : No")
             if int(input()) == 2 : again = False
         
         # Time to travel any pair of rooms
         if choice == 3:
-            print_all_paths_fw()
+            query_path()
             
-            print("\nDo you want to try another part of the project ?")
+            print("Would you like to print the adjacency matrixes for crewmates and impostors ?")
+            print("\n1 : Yes , 2 : No")
+            if int(input()) == 1 :
+                mat_cm, mat_im = import_graph()
+                print("\nThis is the original graph (as an adjacency matrix) for crewmate mobility :\n\n" + str(mat_cm))
+                print("\nThis is the original graph (as an adjacency matrix) for impostor mobility :\n\n" + str(mat_im))
+                
+                Floyd_warshall(mat_cm)
+                Floyd_warshall(mat_im)
+                
+                print("\nThis is the new graph (as a matrix representing the time to travel between any pair of rooms) for crewmates :\n\n" + str(mat_cm))
+                print("\nThis is the new graph (as a matrix representing the time to travel between any pair of rooms) for impostors :\n\n" + str(mat_im))
+            
+            print("\nWould you like to try another part of the project ?")
             print("\n1 : Yes , 2 : No")
             if int(input()) == 2 : again = False
         
@@ -937,15 +894,119 @@ def Main():
             short_path = shortest_hamilton(paths, import_graph()[0])
             
             print("We have computed the shortest path, in room number it looks like :\n" + str(short_path[0]) +
-                  ",\nthe corresponding room names however are :")
+                  ",\nthe corresponding room names however are :\n\n")
             
             for room in short_path[0]:
                 print(rooms[room])
                 
             print("\nIts length is " + str(short_path[1]) + ", but there are actually " + str(short_path[2]) + " paths that short !")
             
-            print("\nDo you want to try another part of the project ?")
+            print("\nWould you like to try another part of the project ?")
             print("\n1 : Yes , 2 : No")
             if int(input()) == 2 : again = False  
+       
+"""
+Some test functions we used throughout the project
+The test_has_seen function uses the example provided in the subject of the project ! We obtain the same
+results as in our theoretical approach provided in the report
+"""
+def test_game():
+    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
+               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
+               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
+    game1 = Game(players)
+    game2 = Game(players)
+    print(game1) #la partie est bien crée, et 2 imposteurs sont choisis aléatoirement
+    print(game2)
+    
+def test_points():
+    """
+    Method for testing the points attribution between players in a game
+
+    Returns
+    -------
+    None.
+
+    """
+    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
+               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
+               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
+    game = Game(players)
+    
+    game.Points()
+    for player in game.players:
+        print("Impostor :", player.impostor, player.name, player.score)
+    
+def test_tournament():
+    players = []
+    for i in range(100):
+        player_name = 'player' + str(i+1)
+        players.append(Player(player_name))
+    tournament = Tournament(players)
+    tournament.Start()
+    print(tournament)
+    
+
+# test function for computing the probability for each player of being an impostor in the example given
+def test_has_seen():
+    """
+    Method for testing the has-seen algorithm
+    """
+    
+    #the incidence matrix representing the has-seen-graph    
+    inc_mat=np.array([[1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+                     [1,0,0,1,1,0,0,0,0,0,0,0,0,0,0],
+                     [0,0,0,1,0,1,1,0,0,0,0,0,0,0,0],
+                     [0,0,0,0,0,1,0,1,1,0,0,0,0,0,0],
+                     [0,1,0,0,0,0,0,1,0,1,0,0,0,0,0],
+                     [0,0,1,0,0,0,0,0,0,0,1,1,0,0,0],
+                     [0,0,0,1,0,0,0,0,0,0,0,0,1,1,0],
+                     [0,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
+                     [0,0,0,0,0,0,0,0,1,0,0,1,1,0,0],
+                     [0,0,0,0,0,0,0,0,0,1,0,0,0,1,1]])
+    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
+               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
+               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
+    game = Game(players)
+    game.probable_impostors(players[0], inc_mat)
+  
+
+def test_random_has_seen():
+    """
+    Test function for generating a random first kill and random connexions between the players, 
+    and then computing players' probability of being impostor
+    """
+    players = [Player('doubleA'), Player('polo'), Player('tomus'), 
+               Player('youngsamoo'), Player('jbinks'), Player('nyo'), 
+               Player('jojo'), Player('clemter'), Player('paul'), Player('aladin')]
+    game = Game(players)
+    inc_mat = game.mat_has_seen()
+    print(inc_mat,"\n")
+    random_dead_idx = random.randint(0,7) # we choose a random crewmate to die
+    dead_cm = game.crewmates[random_dead_idx]
+    
+    game.probable_impostors(dead_cm, game.mat_has_seen())
+    
+def test_tournament2():
+    players = []
+    for i in range(100):
+        player_name = 'player' + str(i+1)
+        players.append(Player(player_name))
+    tournament = Tournament(players)
+    #3random games
+    tournament.randomgames()
+    #organise players
+    fusion(players)
+    #eliminative games
+    tournament.eliminatorygames()
+    #finals
+    tournament.finals()
+    #winners
+    fusion(players)
+    print("Here are the winners!!!")
+    for i in range(3):
+        print(players[i].name,"with a score of:",players[i].score)
+    
+
     
 Main() 
